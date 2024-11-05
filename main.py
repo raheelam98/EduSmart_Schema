@@ -8,7 +8,7 @@ from typing import List, Optional
 import uuid
 from enum import Enum
 
-# define class models using Pydantic to represent the structure of nodes
+# Define class models using Pydantic to represent the structure of nodes
 
 class ProgramModel(BaseModel):
     program_id: Optional[str] = Field(default_factory=lambda: str(uuid.uuid4()), nullable=False, primary_key=True)
@@ -87,11 +87,7 @@ class TopicContentModel(BaseModel):
     id: Optional[str] = Field(default_factory=lambda: str(uuid.uuid4()), nullable=False, primary_key=True)
     content: str  ## check
     embeddings: Optional[any]
-    last_updated: str = Field(default=date.today())
-
-##  class CompletedTopicModel 
-#   DIRECTED EDGE COMPLETED_TOPIC {level :: INT NOT NULL,assessment_date :: DATE}     
-#       CONNECTING (Student -> Topic),    
+    last_updated: str = Field(default=date.today())   
     
 class CompletedTopicModel(BaseModel):
     level: int = Field(nullable=False)
@@ -146,7 +142,6 @@ class OptionModel(BaseModel):
     option_id: Optional[str] = Field(default_factory=lambda: str(uuid.uuid4()), nullable=False, primary_key=True)
     answer_text: str = Field(nullable=False)
     is_correct: bool = Field(nullable=False)     
-
 
 # Interaction Nodes and Student Assessment Tracking
 # Use-Case:
@@ -313,7 +308,8 @@ def create_topic_node(topic: TopicModel, textbook_node: Node):
     graph.create(covers_rel)
     return topic_node
 
-#  DIRECTED EDGE CONTAINS_TOPIC CONNECTING (Topic -> Topic), double check relationship
+#  DIRECTED EDGE CONTAINS_TOPIC CONNECTING (Topic -> Topic)
+
 def create_topic_relationships(topic_node: Node, related_topic_node: Node):
     contains_topic_rel = Relationship(topic_node, "CONTAINS_TOPIC", related_topic_node)
     graph.create(contains_topic_rel)
@@ -326,9 +322,8 @@ def create_topic_content_node(topic_content: TopicContentModel, topic_node: Node
     graph.create(contains_content_rel)
     return topic_content_node
 
-# Function to create CompletedTopic relationship double check
-#   DIRECTED EDGE COMPLETED_TOPIC {level :: INT NOT NULL,assessment_date :: DATE}     
-#       CONNECTING (Student -> Topic),
+# Function to create CompletedTopic relationship 
+
 def create_completed_topic_relationship(student_node: Node, topic_node: Node, completed_topic: CompletedTopicModel):
     completed_topic_rel = Relationship(student_node, "COMPLETED_TOPIC", topic_node, **completed_topic.dict())
     graph.create(completed_topic_rel)
@@ -337,6 +332,7 @@ def create_completed_topic_relationship(student_node: Node, topic_node: Node, co
 #  QuestionBank Questions and Answers Related to Topics (CaseStudy is Skipped for Time)
 
 # UNDIRECTED EDGE CONTAINS {} CONNECTING (Topic ~ Question)   
+
 def create_question_node(question : QuestionModel, topic_node : Node):
     question_node = Node("Question", **question.dict())
     graph.create(question_node)
@@ -464,7 +460,7 @@ def create_attempted_answer_node(attempted_answer: AttemptedAnswerModel, answer_
     graph.create(is_response_to_question_rel)
     return attempted_answer_node
 
-# // Classes & Tracking  : apply condition double check
+# // Classes & Tracking  
 
 def create_online_session_schedule_node(online_session_schedule: OnlineSessionScheduleModel, section_node: SectionModel, course_node: CourseModel):
     online_session_schedule_node = Node("OnlineSessionSchedule", **online_session_schedule.dict())
