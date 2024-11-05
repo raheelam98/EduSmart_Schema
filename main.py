@@ -1,15 +1,7 @@
 # edu_smart_schema - main.py
-from fastapi import FastAPI, HTTPException
+
 from pydantic import Field
 from datetime import date
-
-app = FastAPI()
-
-@app.get("/")
-def read_root():
-    return {"Edu Smart": "Schema"}
-
-## ============================  *** ============================ ##
 
 from pydantic import BaseModel
 from typing import List, Optional
@@ -202,11 +194,44 @@ class AssignmentProjectModel(BaseModel):
     title: str
     details: Optional[str]
     passing_score: Optional[int]
-    max_duration: Optional[int]      
+    max_duration: Optional[int]     
 
+class QuizModel(BaseModel):
+    id: Optional[str] = Field(default_factory=lambda: str(uuid.uuid4()), nullable=False, primary_key=True)
+    title: Optional[str]
+    total_questions: Optional[int]
+    max_score: Optional[int]
+    time_duration: Optional[int]
+    topics_count: Optional[int]
+
+class AnswerSheetModel(BaseModel):
+    id: Optional[str] = Field(default_factory=lambda: str(uuid.uuid4()), nullable=False, primary_key=True)
+    question_ids: List[any]
+    grade: Optional[float]
+    start_time: str = Field(default=date.today())
+    end_time: str = Field(default=date.today())
+
+class AttemptedAnswerModel(BaseModel):
+    id: Optional[str] = Field(default_factory=lambda: str(uuid.uuid4()), nullable=False, primary_key=True)
+    question: str
+    answer: str
+    score: Optional[float] 
+
+class OnlineSessionScheduleModel(BaseModel):
+    id: Optional[str] = Field(default_factory=lambda: str(uuid.uuid4()), nullable=False, primary_key=True)
+    zoom_link: Optional[str]
+    topics_to_cover: List[str]
+    class_time: str = Field(default=date.today())
+    class_day: str
+    class_status: Optional[bool]
+
+class NotificationModel(BaseModel):
+    id: Optional[str] = Field(default_factory=lambda: str(uuid.uuid4()), nullable=False, primary_key=True)
+    content: str
+    notification_time: str = Field(default=date.today())
+          
 ## ============================  *** ============================ ##
 ## ============================  *** ============================ ##  
-
 
 # create a function to add nodes and relationships to the database using these models
 
@@ -409,9 +434,66 @@ def create_student_assessment_relationship(student_node: Node, assessment_node: 
     attempts_assessment_rel = Relationship(student_node, "ATTEMPTS_ASSESSMENT", assessment_node, assessment_type=assessment_type)
     graph.create(attempts_assessment_rel)
 
+def create_quiz_node(quiz: QuizModel, course_node: CourseModel, topic_node: TopicModel):
+    quiz_node = Node("Quiz", **quiz.dict())
+    graph.create(quiz_node)
+    belongs_to_rel = Relationship(quiz_node, "BELONGS_TO", course_node)
+    covers_topic_rel = Relationship(quiz_node, "COVERS_TOPIC", topic_node)
+    graph.create(belongs_to_rel)
+    graph.create(covers_topic_rel)
+    return quiz_node
+
+def create_answer_sheet_node(answer_sheet: AnswerSheetModel, student_node: StudentModel, quiz_node: QuizModel):
+    answer_sheet_node = Node("AnswerSheet", **answer_sheet.dict())
+    graph.create(answer_sheet_node)
+    has_attempt_rel = Relationship(student_node, "HAS_ATTEMPT", answer_sheet_node, attempt_date=date.today().isoformat(), submission_status="submitted")
+    has_response_rel = Relationship(quiz_node, "HAS_RESPONSE", answer_sheet_node)
+    graph.create(has_attempt_rel)
+    graph.create(has_response_rel)
+    return answer_sheet_node
+
+## Right Now we don't have student attempted answers connected to Question. If this use case is required
+##  We can create an Answers nodes connected AnswerSheet to Questions.
+
+def create_attempted_answer_node(attempted_answer: AttemptedAnswerModel, answer_sheet_node: AnswerSheetModel, question_node: QuestionModel):
+    attempted_answer_node = Node("AttemptedAnswer", **attempted_answer.dict())
+    graph.create(attempted_answer_node)
+    contains_attempted_answer_rel = Relationship(answer_sheet_node, "CONTAINS_ATTEMPTED_ANSWER", attempted_answer_node)
+    is_response_to_question_rel = Relationship(attempted_answer_node, "IS_RESPONSE_TO_QUESTION", question_node)
+    graph.create(contains_attempted_answer_rel)
+    graph.create(is_response_to_question_rel)
+    return attempted_answer_node
+
+# // Classes & Tracking  : apply condition double check
+
+def create_online_session_schedule_node(online_session_schedule: OnlineSessionScheduleModel, section_node: SectionModel, course_node: CourseModel):
+    online_session_schedule_node = Node("OnlineSessionSchedule", **online_session_schedule.dict())
+    graph.create(online_session_schedule_node)
+    has_section_schedule_rel = Relationship(section_node, "HAS_SECTION_SCHEDULE", online_session_schedule_node)
+    graph.create(has_section_schedule_rel)
+    has_course_schedule_rel = Relationship(course_node, "HAS_COURSE_SCHEDULE", online_session_schedule_node)
+    graph.create(has_course_schedule_rel)
+    for topic_title in online_session_schedule.topics_to_cover:
+        topic_node = graph.nodes.match("Topic", title=topic_title).first()
+        if topic_node:
+            teaches_topic_rel = Relationship(online_session_schedule_node, "TEACHES_TOPIC", topic_node, date=date.today().isoformat())
+            graph.create(teaches_topic_rel)
+    return online_session_schedule_node
+
+def create_notification_node(notification : NotificationModel, student_node: Node, teacher_node: Node, section_node: Node, course_node: Node ):
+    notification_node = Node("Notification", **notification.dict())
+    graph.create(notification_node)
+
+    notifies_student_rel = Relationship(notification_node, "NOTIFIES_STUDENT", student_node)
+    manages_notification_rel = Relationship(teacher_node, "MANAGES_NOTIFICATION", notification_node)
+    notifies_section_rel = Relationship(notification_node, "NOTIFIES_SECTION", section_node)
+    notifies_course_rel = Relationship(notification_node, "NOTIFIES_COURSE", course_node)
+
+    graph.create(notifies_student_rel)
+    graph.create(manages_notification_rel)
+    graph.create(notifies_section_rel)
+    graph.create(notifies_course_rel)
+    return notification_node
+
 ## ============================  *** ============================ ##
-## ============================  *** ============================ ##
-
-
-
-
+## ============================  *** ============================ ##  
