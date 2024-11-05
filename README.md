@@ -1,6 +1,6 @@
 ## EduSmart Schema
 
-**EduSmart schema for Neo4j and Python UV**
+**EduSmart schema using Python UV with a Neo4j AuraDB database.**
 
 [EduSmart Schema](https://github.com/panaversity/EduSmart/blob/main/gql_schema.md)
 
