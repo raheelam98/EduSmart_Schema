@@ -1,6 +1,6 @@
 ## EduSmart Schema
 
-**EduSmart schema using Python UV with a Neo4j AuraDB database.**
+**The EduSmart schema for the online university system is developed using Neo4j AuraDB, the Neo4j Python SDK, and Python UV**
 
 [EduSmart Schema](https://github.com/panaversity/EduSmart/blob/main/gql_schema.md)
 
